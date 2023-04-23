@@ -169,3 +169,57 @@ db.pedidos.aggregate([
 db.pedidos.countDocuments({
     "func_responsavel": "Maria"
 });
+
+// AVG: retorna a média de preços dos lanches das lanchonetes
+db.lanchonetes.aggregate([
+    { $unwind: "$cardapio" },
+    {
+        $lookup:
+        {
+            from: "lanches",
+            localField: "cardapio._id",
+            foreignField: "_id",
+            as: "lanches"
+        }
+    },
+    { $unwind: "$lanches" },
+    {
+        $group:
+        {
+            _id: "$nome",
+            mediaPreco: { $avg: "$lanches.preco" }
+        }
+    }
+]);
+
+// EXISTS: Retorna os lanches que possuem um preço
+db.lanches.find({
+    preco: { $exists: true }
+});
+
+// SORT: lista os nomes das lanchonetes por ordem alfabética
+db.lanchonetes.aggregate([
+    {
+        $sort: {
+            nome: 1
+        }
+    },
+    {
+        $project: {
+            _id: 0,
+            nome: 1
+        }
+    }
+]);
+
+// LIMIT: Lista os lanches que são vegetarianos e limita o resultado em 5 documentos
+db.lanches.find({
+    vegetariano: true
+}).limit(5);
+
+// WHERE: Retorna os lanches que possuem "Crepe" no nome
+db.lanches.find({
+    $where: function () {
+        return this.nome.includes("Crepe");
+    }
+});
