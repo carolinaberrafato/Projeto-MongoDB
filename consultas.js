@@ -23,6 +23,7 @@ db.laches.find({_id: 0, nome: 1, preco: 1, tempo_preparo: 1});
 db.laches.renameCollection("lanches");
 
 // aumenta o valor do primeiro lanche com o nome "Pastel de Camarão" em 1 real e altera o tempo de preparo para 5 minutos
+// update foi substituído por updateOne ou updateMany
 db.lanches.updateOne(
     { nome: "Pastel de Camarão" },
     {
@@ -38,3 +39,67 @@ db.lanchonetes.findOne(
     { _id: 0 },
     { let : { num: 39 }
 });
+
+// busca todos
+db.lanchonetes.aggregate([
+    {
+    $lookup:
+        {
+            from: "lanches",
+            let: { preco_item: "$preco" },
+            pipeline: [
+            { $match:
+                { $expr:
+                    { $lte: [ "$$preco_item", "$n_funcionarios" ]}
+                }
+            },
+            { $project: { _id: 0} }
+            ],
+            as: "lanches"
+        }
+    }
+]);
+
+// utiliza o $lookup para buscar os lanches de cada lanchonete, com base no id dos itens no cardápios e os agrupa de forma detalhada para cada lanchonete
+// vale ressaltar que o cardapio já contém os lanches, então não seria necessário utilizar essa função, mas foi feito para demonstrar o uso do $lookup
+db.lanchonetes.aggregate([
+    {
+        $unwind: "$cardapio"
+    },
+    {
+        $lookup: {
+        from: "lanches",
+        localField: "cardapio._id",
+        foreignField: "_id",
+        as: "lanches_detalhados"
+    }
+    },
+    {
+        $unwind: "$lanches_detalhados"
+    },
+    {
+        $match: {
+            "lanches_detalhados": { $exists: true }
+        }
+    },
+    {
+        $group: {
+            _id: "$_id",
+            nome: { $first: "$nome" },
+            localizacao: { $first: "$localizacao" },
+            data_fundacao: { $first: "$data_fundacao" },
+            n_funcionarios: { $first: "$n_funcionarios" },
+            cardapio: { $push: "$lanches_detalhados" }
+        }
+    }
+]);
+
+// insere um novo lanche com nome "Pastel Mistão", preço 17 reais e tempo de preparo 15 minutos, mas sem especificar o _id
+// save foi substituído pelo insertOne ou insertMany
+db.lanches.insertOne({ nome: "Pastel Mistão", preco: 17.00, tempo_preparo: 15 });
+
+// adiciona o novo lanche ao cardápio da lanchonete "Rango Top"
+db.lanchonetes.updateOne(
+    { nome: "Rango Top" },
+    { $addToSet: { cardapio: { _id: ObjectId("64449fc089549bfcbe33690b"), nome: "Pastel Mistão", preco: 17.00, tempo_preparo: 15  } } }
+);
