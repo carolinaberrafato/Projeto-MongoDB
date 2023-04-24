@@ -353,3 +353,4 @@ function adicionarItemCardapio(nomeLanchonete, item) {
 const novoItem = { "nome": "Torrada Gourmet", "preco": 15.50 };
 adicionarItemCardapio("Zé Lanches", novoItem);
 
+
