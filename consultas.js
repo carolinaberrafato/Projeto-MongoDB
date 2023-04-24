@@ -309,7 +309,12 @@ db.lanches.find({"preco": {$lte: 10}}).pretty();
 
 //ALL: Consulta para encontrar lanchonetes que ofereçam "Coca-Cola" e "Guaraná Antártica" em seu cardápio:
 
-db.lanches.find({ "nome": { "$all": ["Sanduíche de Queijo e Presunto"] } })
+db.lanchonetes.find({
+    "cardapio.nome": {
+        $all: ["Sanduíche de Queijo e Presunto", "Cachorro Quente"]
+    }
+})
+
 
 // --------------- SET
 
@@ -352,5 +357,4 @@ function adicionarItemCardapio(nomeLanchonete, item) {
 
 const novoItem = { "nome": "Torrada Gourmet", "preco": 15.50 };
 adicionarItemCardapio("Zé Lanches", novoItem);
-
 
