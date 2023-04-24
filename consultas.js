@@ -1,3 +1,66 @@
+//FIND: retorna todos as lanchonetes que apresentam opção de delivery
+db.lanchonetes.find({"servicos.tipo": "delivery" })
+
+// FIND, SIZE: lista as lanchonetes com 2 tipos de serviço: delivery e retirada em local
+db.lanchonetes.find({servicos:{$size: 2}}).pretty();
+
+//AGGREGATE, MATCH, GROUP: agrupa os restaurantes que apresentam um serviço de delivery e simultaneamente possuem opção vegetariana no cardápio
+db.lanchonetes.aggregate( [
+    {
+       $match: {  "servicos.tipo": "delivery"}
+    },
+    {
+        $match: {  "cardapio.vegetariano": true}
+     },
+    {
+        $group: { _id: "$tipo", lanchonetes: { $push: "$$ROOT" } } 
+    }
+ ]);
+
+// PROJECT, LOOKUP, GROUP, COND: percorre todos os pedidos e os classifica entre caro e barato
+db.pedidos.aggregate([
+    {
+      $lookup: {
+        from: "lanches",
+        localField: "lanches.nome",
+        foreignField: "nome",
+        as: "detalhes_lanche"
+      }
+    },
+    {
+      $unwind: "$detalhes_lanche"
+    },
+    {
+      $group: {
+        _id: "$_id",
+        total: { $sum: "$detalhes_lanche.preco" },
+        tipo: { $first: "$tipo" },
+        forma_pagamento: { $first: "$forma_pagamento" },
+        lanches: { $first: "$lanches" },
+        cliente: { $first: "$cliente" },
+        end_cliente: { $first: "$end_cliente" },
+        func_responsavel: { $first: "$func_responsavel" }
+      }
+    },
+    {
+      $project: {
+        tipo: 1,
+        forma_pagamento: 1,
+        lanches: 1,
+        cliente: 1,
+        end_cliente: 1,
+        func_responsavel: 1,
+        classificacao: {
+          $cond: {
+            if: { $gte: ["$total", 50] },
+            then: "Caro",
+            else: "Barato"
+          }
+        }
+      }
+    }
+  ]);
+
 // TEXT/SEARCH: busca todos os lanches que custam menos de 5 reais e têm coxinha em seu nome
 db.lanches.createIndex({ nome: "text" });
 db.lanches.find({ $text: { $search: "coxinha" }, preco: { $lt: 5.00 }}, { nome: 1, preco: 1, tempo_preparo: 1, _id: 0 }).pretty();
