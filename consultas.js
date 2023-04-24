@@ -223,3 +223,70 @@ db.lanches.find({
         return this.nome.includes("Crepe");
     }
 });
+
+
+//MAP REDUCE: Calcular a média de preço dos lanches:
+
+db.lanches.mapReduce(
+    function() {
+        emit("media", this.preco);
+    },
+    function(key, values) {
+        return Array.sum(values) / values.length;
+    },
+    {
+        out: {inline: 1}
+    }
+);
+
+
+//PRETTY: Consulta para listar todos os lanches com preço menor ou igual a R$10,00:
+
+db.lanches.find({"preco": {$lte: 10}}).pretty();
+
+//ALL: Consulta para encontrar lanchonetes que ofereçam "Coca-Cola" e "Guaraná Antártica" em seu cardápio:
+
+db.lanches.find({ "nome": { "$all": ["Sanduíche de Queijo e Presunto"] } })
+
+// --------------- SET
+
+//Atualizar o preço de "Coca-Cola" para R$ 5,00:
+
+db.lanches.updateOne(
+    { "nome": "Coca-Cola" },
+    { $set: { "preco": 5.00 } }
+);
+
+//Atualizar a localização de uma lanchonete específica para "boa viagem, 100":
+
+db.lanchonetes.updateOne(
+    { "nome": "Zé Lanches" },
+    { $set: { "localizacao": "boa viagem, 100" } }
+);
+
+//FUNCTION: Função para adicionar um item ao cardápio de uma lanchonete:
+
+function adicionarItemCardapio(nomeLanchonete, item) {
+    const lanchonete = db.lanchonetes.findOne({ "nome": nomeLanchonete });
+    if (!lanchonete) {
+        console.error("Lanchonete não encontrada");
+        return;
+    }
+
+    const lanche = db.lanches.findOne({ "nome": item.nome });
+    if (!lanche) {
+        db.lanches.insertOne(item);
+    }
+
+    const itemId = db.lanches.findOne({ "nome": item.nome });
+
+    db.lanchonetes.updateOne(
+        { "nome": nomeLanchonete },
+        { $push: { "cardapio": itemId } }
+    );
+    console.log("Item adicionado ao cardápio da lanchonete", nomeLanchonete);
+}
+
+const novoItem = { "nome": "Torrada Gourmet", "preco": 15.50 };
+adicionarItemCardapio("Zé Lanches", novoItem);
+
