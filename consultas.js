@@ -1,5 +1,5 @@
 //FIND: retorna todos as lanchonetes que apresentam opção de delivery
-db.lanchonetes.find({"servicos.tipo": "delivery" })
+db.lanchonetes.find({"servicos.tipo": "delivery" });
 
 // FIND, SIZE: lista as lanchonetes com 2 tipos de serviço: delivery e retirada em local
 db.lanchonetes.find({servicos:{$size: 2}}).pretty();
