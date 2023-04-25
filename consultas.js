@@ -307,7 +307,7 @@ db.lanches.mapReduce(
 
 db.lanches.find({"preco": {$lte: 10}}).pretty();
 
-//ALL: Consulta para encontrar lanchonetes que ofereçam "Coca-Cola" e "Guaraná Antártica" em seu cardápio:
+//ALL: Consulta para encontrar lanchonetes que ofereçam "Sanduíche de Queijo e Presunto" e "Cachorro Quente" em seu cardápio:
 
 db.lanchonetes.find({
     "cardapio.nome": {
