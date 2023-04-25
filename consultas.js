@@ -52,7 +52,7 @@ db.pedidos.aggregate([
         func_responsavel: 1,
         classificacao: {
           $cond: {
-            if: { $gte: ["$total", 50] },
+            if: { $gte: ["$total", 40] },
             then: "Caro",
             else: "Barato"
           }
