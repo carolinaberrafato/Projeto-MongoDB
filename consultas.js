@@ -345,6 +345,6 @@ function adicionarItemCardapio(nomeLanchonete, item) {
     console.log("Item adicionado ao cardápio da lanchonete", nomeLanchonete);
 }
 
-const novoItem = { "nome": "Torrada Gourmet", "preco": 15.50 };
+const novoItem = { "nome": "Torrada Gourmet", "preco": 15.50, "tempo_preparo": 15, "vegetariano": false };
 adicionarItemCardapio("Zé Lanches", novoItem);
 
