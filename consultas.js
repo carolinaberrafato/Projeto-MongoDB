@@ -279,7 +279,7 @@ db.lanches.find({
 
 
 //MAP REDUCE: Calcular a média de preço dos lanches:
-
+// O comando MAPREDUCE está deprecated. O Mongo recomenda substituí-lo por aggregate, mas como já temos uma função que calcula a média e várias que usam o aggregate, deixaremos ela aqui apenas para manter a checklist. De qualquer forma, ela funciona, mas exibe um warning.
 db.lanches.mapReduce(
     function() {
         emit("media", this.preco);
@@ -306,16 +306,14 @@ db.lanchonetes.find({
 })
 
 
-// --------------- SET
-
-//Atualizar o preço de "Coca-Cola" para R$ 5,00:
+// SET: Atualizar o preço de "Coca-Cola" para R$ 5,00:
 
 db.lanches.updateOne(
     { "nome": "Coca-Cola" },
     { $set: { "preco": 5.00 } }
 );
 
-//Atualizar a localização de uma lanchonete específica para "boa viagem, 100":
+// SET: Atualizar a localização de uma lanchonete específica para "boa viagem, 100":
 
 db.lanchonetes.updateOne(
     { "nome": "Zé Lanches" },
