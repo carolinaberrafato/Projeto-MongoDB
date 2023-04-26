@@ -110,26 +110,6 @@ db.lanchonetes.findOne(
     { let : { num: 39 }
 });
 
-// LOOKUP/MATCH/PROJECT: busca todos
-db.lanchonetes.aggregate([
-    {
-    $lookup:
-        {
-            from: "lanches",
-            let: { preco_item: "$preco" },
-            pipeline: [
-            { $match:
-                { $expr:
-                    { $lte: [ "$$preco_item", "$n_funcionarios" ]}
-                }
-            },
-            { $project: { _id: 0} }
-            ],
-            as: "lanches"
-        }
-    }
-]);
-
 // LOOKUP/MATCH/GROUP: utiliza o $lookup para buscar os lanches de cada lanchonete, com base no id dos itens no cardápios e os agrupa de forma detalhada para cada lanchonete
 // vale ressaltar que o cardapio já contém os lanches, então não seria necessário utilizar essa função, mas foi feito para demonstrar o uso do $lookup
 db.lanchonetes.aggregate([
