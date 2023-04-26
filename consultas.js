@@ -149,11 +149,13 @@ db.lanchonetes.aggregate([
 db.lanches.insertOne({ nome: "Pastel Mistão", preco: 17.00, tempo_preparo: 15, vegetariano: false });
 
 // ADDTOSET: adiciona o novo lanche ao cardápio da lanchonete "Rango Top"
+// Usado para encontrar o lanche "Pastel Mistão" na coleção lanches
+var pastelMistao = db.lanches.findOne({ nome: "Pastel Mistão" });
+// Atualiza a lanchonete "Rango Top" para adicionar o item "Pastel Mistão" ao cardápio
 db.lanchonetes.updateOne(
-    { nome: "Rango Top" },
-    { $addToSet: { cardapio: { _id: ObjectId("64449fc089549bfcbe33690b"), nome: "Pastel Mistão", preco: 17.00, tempo_preparo: 15, vegetariano: true  } } }
+{ nome: "Rango Top" },
+{ $addToSet: { cardapio: pastelMistao } }
 );
-
 
 // GTE (>=): Seleciona todos os pratos que demoram 10 minutos ou mais para serem preparados e que são vegetarianos
 db.lanches.find({
