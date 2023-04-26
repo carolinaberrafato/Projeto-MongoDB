@@ -66,19 +66,26 @@ db.lanches.createIndex({ nome: "text" });
 db.lanches.find({ $text: { $search: "coxinha" }, preco: { $lt: 5.00 }}, { nome: 1, preco: 1, tempo_preparo: 1, _id: 0 }).pretty();
 
 // FILTER: busca todos os itens em todos os cardápios que tenham preço menor ou igual a 10 reais, com limite de 5 por cardápio
-db.lanchonetes.aggregate({
-    $project: {
-        nome: 1,
+db.lanchonetes.aggregate([
+    {
+        $project: {
+        _id: 0,
+        nome_lanchonete: "$nome",
         cardapio: {
-        $filter: {
-            input: "$cardapio",
-            cond: { $lte: [ "$$item.price", 10] },
-            as: "item",
-            limit: 5
+            $filter: {
+                input: "$cardapio",
+                as: "lanche",
+                cond: {
+                    $and: [
+                        { $lte: [ "$$lanche.preco", 10 ] },
+                        { $lt: [ { $indexOfArray: [ "$cardapio", "$$lanche" ] }, 5 ] }
+                    ]
+                }
+            }
+            }
         }
     }
-    }
-});
+])
 
 // RENAMECOLLECTION: renomeia o nome da coleção de lanches para laches; busca nome, preço e tempo de preparo de todos os lanches e depois muda novamente para lanches
 db.lanches.renameCollection("laches");
