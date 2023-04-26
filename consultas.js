@@ -96,7 +96,7 @@ db.lanches.updateOne(
 );
 db.lanches.find({ nome: "Pastel de Camarão" }, { nome: 1, preco: 1, tempo_preparo: 1, _id: 0 });
 
-// FINDONE: busca a primeira lanchonete que tenha menos de 40 funcionários
+// FINDONE: busca a primeira lanchonete, em ordem de inserção, que tenha menos de 40 funcionários
 db.lanchonetes.findOne(
     { $expr: { $lte: [ "$n_funcionarios", "$$num" ] } },
     { _id: 0 },
