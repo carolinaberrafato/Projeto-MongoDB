@@ -61,102 +61,6 @@ db.pedidos.aggregate([
     }
   ]);
 
-// TEXT/SEARCH: busca todos os lanches que custam menos de 5 reais e têm coxinha em seu nome
-db.lanches.createIndex({ nome: "text" });
-db.lanches.find({ $text: { $search: "coxinha" }, preco: { $lt: 5.00 }}, { nome: 1, preco: 1, tempo_preparo: 1, vegetariano: 1, _id: 0 }).pretty();
-
-// FILTER: busca todos os itens em todos os cardápios que tenham preço menor ou igual a 10 reais, com limite de 5 por cardápio
-db.lanchonetes.aggregate([
-    {
-        $project: {
-        _id: 0,
-        nome_lanchonete: "$nome",
-        cardapio: {
-            $filter: {
-                input: "$cardapio",
-                as: "lanche",
-                cond: {
-                    $and: [
-                        { $lte: [ "$$lanche.preco", 10 ] },
-                        { $lt: [ { $indexOfArray: [ "$cardapio", "$$lanche" ] }, 5 ] }
-                    ]
-                }
-            }
-            }
-        }
-    }
-])
-
-// RENAMECOLLECTION: renomeia o nome da coleção de lanches para laches; busca nome, preço e tempo de preparo de todos os lanches e depois muda novamente para lanches
-db.lanches.renameCollection("laches");
-db.laches.find().pretty();
-db.laches.renameCollection("lanches");
-
-// UPDATE: aumenta o valor do primeiro lanche com o nome "Pastel de Camarão" em 1 real e altera o tempo de preparo para 5 minutos
-// update foi substituído por updateOne ou updateMany
-db.lanches.updateOne(
-    { nome: "Pastel de Camarão" },
-    {
-        $inc: { preco: 1.00 },
-        $set: { tempo_preparo: 5 }
-    }
-);
-db.lanches.find({ nome: "Pastel de Camarão" }, { nome: 1, preco: 1, tempo_preparo: 1, vegetariano: 1, _id: 0 });
-
-// FINDONE: busca a primeira lanchonete, em ordem de inserção, que tenha menos de 40 funcionários
-db.lanchonetes.findOne(
-    { $expr: { $lte: [ "$n_funcionarios", "$$num" ] } },
-    { _id: 0 },
-    { let : { num: 39 }
-});
-
-// LOOKUP/MATCH/GROUP: utiliza o $lookup para buscar os lanches de cada lanchonete, com base no id dos itens no cardápios e os agrupa de forma detalhada para cada lanchonete
-// vale ressaltar que o cardapio já contém os lanches, então não seria necessário utilizar essa função, mas foi feito para demonstrar o uso do $lookup
-db.lanchonetes.aggregate([
-    {
-        $unwind: "$cardapio"
-    },
-    {
-        $lookup: {
-        from: "lanches",
-        localField: "cardapio._id",
-        foreignField: "_id",
-        as: "lanches_detalhados"
-    }
-    },
-    {
-        $unwind: "$lanches_detalhados"
-    },
-    {
-        $match: {
-            "lanches_detalhados": { $exists: true }
-        }
-    },
-    {
-        $group: {
-            _id: "$_id",
-            nome: { $first: "$nome" },
-            localizacao: { $first: "$localizacao" },
-            data_fundacao: { $first: "$data_fundacao" },
-            n_funcionarios: { $first: "$n_funcionarios" },
-            cardapio: { $push: "$lanches_detalhados" }
-        }
-    }
-]);
-
-// SAVE (INSERTONE): insere um novo lanche com nome "Pastel Mistão", preço 17 reais e tempo de preparo 15 minutos, mas sem especificar o _id
-// save foi substituído pelo insertOne ou insertMany
-db.lanches.insertOne({ nome: "Pastel Mistão", preco: 17.00, tempo_preparo: 15, vegetariano: false });
-
-// ADDTOSET: adiciona o novo lanche ao cardápio da lanchonete "Rango Top"
-// Usado para encontrar o lanche "Pastel Mistão" na coleção lanches
-var pastelMistao = db.lanches.findOne({ nome: "Pastel Mistão" });
-// Atualiza a lanchonete "Rango Top" para adicionar o item "Pastel Mistão" ao cardápio
-db.lanchonetes.updateOne(
-{ nome: "Rango Top" },
-{ $addToSet: { cardapio: pastelMistao } }
-);
-
 // GTE (>=): Seleciona todos os pratos que demoram 10 minutos ou mais para serem preparados e que são vegetarianos
 db.lanches.find({
     tempo_preparo: {
@@ -193,6 +97,11 @@ db.pedidos.aggregate([
     }}
 ]);
 
+// COUNT: Contando todos os pedidos cuja funcionária responsável foi Maria
+// A função COUNT funciona, mas mostra uma mensagem de deprecated, então substituí por countDocuments()
+db.pedidos.countDocuments({
+    "func_responsavel": "Maria"
+});
 
 // MAX: Seleciona o ID e o valor do item mais caro de cada pedido
 db.pedidos.aggregate([
@@ -215,13 +124,6 @@ db.pedidos.aggregate([
         maior: {$max: "$lanchesInfo.preco"}
     }}
 ]);
-
-
-// COUNT: Contando todos os pedidos cuja funcionária responsável foi Maria
-// A função COUNT funciona, mas mostra uma mensagem de deprecated, então substituí por countDocuments()
-db.pedidos.countDocuments({
-    "func_responsavel": "Maria"
-});
 
 // AVG: retorna a média de preços dos lanches das lanchonetes
 db.lanchonetes.aggregate([
@@ -277,7 +179,6 @@ db.lanches.find({
     }
 });
 
-
 //MAP REDUCE: Calcular a média de preço dos lanches:
 // O comando MAPREDUCE está deprecated. O Mongo recomenda substituí-lo por aggregate, mas como já temos uma consulta que calcula a média e várias que usam o aggregate, deixaremos ela aqui apenas para manter a checklist. De qualquer forma, ela funciona, mas exibe um warning.
 db.lanches.mapReduce(
@@ -292,36 +193,7 @@ db.lanches.mapReduce(
     }
 );
 
-
-//PRETTY: Consulta para listar todos os lanches com preço menor ou igual a R$10,00:
-
-db.lanches.find({"preco": {$lte: 10}}).pretty();
-
-//ALL: Consulta para encontrar lanchonetes que ofereçam "Sanduíche de Queijo e Presunto" e "Cachorro Quente" em seu cardápio:
-
-db.lanchonetes.find({
-    "cardapio.nome": {
-        $all: ["Sanduíche de Queijo e Presunto", "Cachorro Quente"]
-    }
-})
-
-
-// SET: Atualizar o preço de "Coca-Cola" para R$ 5,00:
-
-db.lanches.updateOne(
-    { "nome": "Coca-Cola" },
-    { $set: { "preco": 5.00 } }
-);
-
-// SET: Atualizar a localização de uma lanchonete específica para "boa viagem, 100":
-
-db.lanchonetes.updateOne(
-    { "nome": "Zé Lanches" },
-    { $set: { "localizacao": "boa viagem, 100" } }
-);
-
 //FUNCTION: Função para adicionar um item ao cardápio de uma lanchonete:
-
 function adicionarItemCardapio(nomeLanchonete, item) {
     const lanchonete = db.lanchonetes.findOne({ "nome": nomeLanchonete });
     if (!lanchonete) {
@@ -346,3 +218,119 @@ function adicionarItemCardapio(nomeLanchonete, item) {
 const novoItem = { "nome": "Torrada Gourmet", "preco": 15.50, "tempo_preparo": 15, "vegetariano": true };
 adicionarItemCardapio("Zé Lanches", novoItem);
 
+//PRETTY: Consulta para listar todos os lanches com preço menor ou igual a R$10,00:
+db.lanches.find({"preco": {$lte: 10}}).pretty();
+
+//ALL: Consulta para encontrar lanchonetes que ofereçam "Sanduíche de Queijo e Presunto" e "Cachorro Quente" em seu cardápio:
+db.lanchonetes.find({
+    "cardapio.nome": {
+        $all: ["Sanduíche de Queijo e Presunto", "Cachorro Quente"]
+    }
+})
+
+// SET: Atualizar o preço de "Coca-Cola" para R$ 5,00:
+db.lanches.updateOne(
+    { "nome": "Coca-Cola" },
+    { $set: { "preco": 5.00 } }
+);
+// SET: Atualizar a localização de uma lanchonete específica para "boa viagem, 100":
+db.lanchonetes.updateOne(
+    { "nome": "Zé Lanches" },
+    { $set: { "localizacao": "boa viagem, 100" } }
+);
+
+// TEXT/SEARCH: busca todos os lanches que custam menos de 5 reais e têm coxinha em seu nome
+db.lanches.createIndex({ nome: "text" });
+db.lanches.find({ $text: { $search: "coxinha" }, preco: { $lt: 5.00 }}, { nome: 1, preco: 1, tempo_preparo: 1, vegetariano: 1, _id: 0 }).pretty();
+
+// FILTER: busca todos os itens em todos os cardápios que tenham preço menor ou igual a 10 reais, com limite de 5 por cardápio
+db.lanchonetes.aggregate([
+    {
+        $project: {
+        _id: 0,
+        nome_lanchonete: "$nome",
+        cardapio: {
+            $filter: {
+                input: "$cardapio",
+                as: "lanche",
+                cond: {
+                    $and: [
+                        { $lte: [ "$$lanche.preco", 10 ] },
+                        { $lt: [ { $indexOfArray: [ "$cardapio", "$$lanche" ] }, 5 ] }
+                    ]
+                }
+            }
+            }
+        }
+    }
+])
+
+// UPDATE: aumenta o valor do primeiro lanche com o nome "Pastel de Camarão" em 1 real e altera o tempo de preparo para 5 minutos
+// update foi substituído por updateOne ou updateMany
+db.lanches.updateOne(
+    { nome: "Pastel de Camarão" },
+    {
+        $inc: { preco: 1.00 },
+        $set: { tempo_preparo: 5 }
+    }
+);
+db.lanches.find({ nome: "Pastel de Camarão" }, { nome: 1, preco: 1, tempo_preparo: 1, vegetariano: 1, _id: 0 });
+
+// SAVE (INSERTONE): insere um novo lanche com nome "Pastel Mistão", preço 17 reais e tempo de preparo 15 minutos, mas sem especificar o _id
+// save foi substituído pelo insertOne ou insertMany
+db.lanches.insertOne({ nome: "Pastel Mistão", preco: 17.00, tempo_preparo: 15, vegetariano: false });
+
+// RENAMECOLLECTION: renomeia o nome da coleção de lanches para laches; busca nome, preço e tempo de preparo de todos os lanches e depois muda novamente para lanches
+db.lanches.renameCollection("laches");
+db.laches.find().pretty();
+db.laches.renameCollection("lanches");
+
+// LOOKUP/MATCH/GROUP: utiliza o $lookup para buscar os lanches de cada lanchonete, com base no id dos itens no cardápios e os agrupa de forma detalhada para cada lanchonete
+// vale ressaltar que o cardapio já contém os lanches, então não seria necessário utilizar essa função, mas foi feito para demonstrar o uso do $lookup
+db.lanchonetes.aggregate([
+    {
+        $unwind: "$cardapio"
+    },
+    {
+        $lookup: {
+        from: "lanches",
+        localField: "cardapio._id",
+        foreignField: "_id",
+        as: "lanches_detalhados"
+    }
+    },
+    {
+        $unwind: "$lanches_detalhados"
+    },
+    {
+        $match: {
+            "lanches_detalhados": { $exists: true }
+        }
+    },
+    {
+        $group: {
+            _id: "$_id",
+            nome: { $first: "$nome" },
+            localizacao: { $first: "$localizacao" },
+            data_fundacao: { $first: "$data_fundacao" },
+            n_funcionarios: { $first: "$n_funcionarios" },
+            cardapio: { $push: "$lanches_detalhados" }
+        }
+    }
+]);
+
+// FINDONE: busca a primeira lanchonete, em ordem de inserção, que tenha menos de 40 funcionários
+db.lanchonetes.findOne(
+    { $expr: { $lte: [ "$n_funcionarios", "$$num" ] } },
+    { _id: 0 },
+    { let : { num: 39 }
+});
+
+// ADDTOSET: adiciona o novo lanche ao cardápio da lanchonete "Rango Top"
+// Usado para encontrar o lanche "Pastel Mistão" na coleção lanches
+var pastelMistao = db.lanches.findOne({ nome: "Pastel Mistão" });
+// Atualiza a lanchonete "Rango Top" para adicionar o item "Pastel Mistão" ao cardápio
+db.lanchonetes.updateOne(
+{ nome: "Rango Top" },
+{ $addToSet: { cardapio: pastelMistao } }
+);
