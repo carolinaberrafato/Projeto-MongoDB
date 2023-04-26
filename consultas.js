@@ -89,7 +89,7 @@ db.lanchonetes.aggregate([
 
 // RENAMECOLLECTION: renomeia o nome da coleção de lanches para laches; busca nome, preço e tempo de preparo de todos os lanches e depois muda novamente para lanches
 db.lanches.renameCollection("laches");
-db.laches.find({_id: 0, nome: 1, preco: 1, tempo_preparo: 1});
+db.laches.find().pretty();
 db.laches.renameCollection("lanches");
 
 // UPDATE: aumenta o valor do primeiro lanche com o nome "Pastel de Camarão" em 1 real e altera o tempo de preparo para 5 minutos
@@ -103,7 +103,7 @@ db.lanches.updateOne(
 );
 db.lanches.find({ nome: "Pastel de Camarão" }, { nome: 1, preco: 1, tempo_preparo: 1, _id: 0 });
 
-// FINDONE: busca a primeira lanchonete que tenha menos de 40 funcionários
+// FINDONE: busca a primeira lanchonete, em ordem de inserção, que tenha menos de 40 funcionários
 db.lanchonetes.findOne(
     { $expr: { $lte: [ "$n_funcionarios", "$$num" ] } },
     { _id: 0 },
