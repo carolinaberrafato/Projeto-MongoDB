@@ -170,7 +170,8 @@ db.lanches.find({
 }).sort({tempo_preparo : 1});
 
 
-// GROUP/SUM: Agrupa os pedidos de acordo com a soma do valor de seus lanches
+// GROUP/SUM: Agrupa os pedidos de acordo com a soma do valor de seus lanches, exibindo os IDs dos pedidos e seu valor total
+// Obs: Os pedidos são exibidos numa order diferente da que aparece no povoamento
 db.pedidos.aggregate([
     {
         $unwind: "$lanches"
@@ -187,13 +188,13 @@ db.pedidos.aggregate([
     },
     {
         $group: {
-        _id: "$_id",
+        _id: "$id",
         total: {$sum: "$lanchesInfo.preco"}
     }}
 ]);
 
 
-// MAX: Seleciona o item mais caro de cada pedido
+// MAX: Seleciona o ID e o valor do item mais caro de cada pedido
 db.pedidos.aggregate([
     {
         $unwind: "$lanches"
